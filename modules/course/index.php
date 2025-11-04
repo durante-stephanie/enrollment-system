@@ -1,0 +1,151 @@
+<?php 
+include '../../includes/db.php'; 
+$activePage = 'courses'; 
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Course Maintenance</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../../css/style.css"> <!-- global styles -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <?php include '../../includes/sidebar.php'; ?>
+
+    <div class="content">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="fw-bold">📘 Course Management</h2>
+            <div>
+                <a href="export_excel.php" class="btn btn-success btn-sm">Export Excel</a>
+                <a href="export_pdf.php" class="btn btn-danger btn-sm" target="_blank">Export PDF</a>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">+ Add
+                    Course</button>
+            </div>
+        </div>
+
+        <!-- Filter + Search Row -->
+        <div class="d-flex justify-content-between mb-2">
+            <div id="customFilter"></div>
+        </div>
+
+        <div class="card p-3 shadow-sm">
+            <table id="courseTable" class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Code</th>
+                        <th>Title</th>
+                        <th>Units</th>
+                        <th>Lecture</th>
+                        <th>Lab</th>
+                        <th>Department</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 🔹 Add Course Modal -->
+    <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="addForm" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">➕ Add Course</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Course Code</label>
+                        <input type="text" name="course_code" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Course Title</label>
+                        <input type="text" name="course_title" class="form-control" required>
+                    </div>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label class="form-label">Units</label>
+                            <input type="number" step="0.5" name="units" class="form-control" required>
+                        </div>
+                        <div class="col mb-3">
+                            <label class="form-label">Lecture Hours</label>
+                            <input type="number" name="lecture_hours" class="form-control" required>
+                        </div>
+                        <div class="col mb-3">
+                            <label class="form-label">Lab Hours</label>
+                            <input type="number" name="lab_hours" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Department</label>
+                        <select name="dept_id" class="form-select" required></select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save Course</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 🔹 Edit Course Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="editForm" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">✏️ Edit Course</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="course_id">
+                    <div class="mb-3">
+                        <label class="form-label">Course Code</label>
+                        <input type="text" name="course_code" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Course Title</label>
+                        <input type="text" name="course_title" class="form-control" required>
+                    </div>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label class="form-label">Units</label>
+                            <input type="number" step="0.5" name="units" class="form-control" required>
+                        </div>
+                        <div class="col mb-3">
+                            <label class="form-label">Lecture Hours</label>
+                            <input type="number" name="lecture_hours" class="form-control" required>
+                        </div>
+                        <div class="col mb-3">
+                            <label class="form-label">Lab Hours</label>
+                            <input type="number" name="lab_hours" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Department</label>
+                        <select name="dept_id" class="form-select" required></select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Update Course</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="../../js/course.js"></script>
+</body>
+
+</html>
