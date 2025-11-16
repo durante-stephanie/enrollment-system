@@ -10,10 +10,11 @@ switch ($action) {
     case 'read':
         $sql = "SELECT e.enrollment_id, e.student_id, e.section_id, e.status, e.letter_grade,
                        CONCAT(s.last_name, ', ', s.first_name) AS student_name,
-                       sec.section_code
+                       sec.section_code, c.course_title
                 FROM tblenrollment e
                 JOIN tblstudent s ON e.student_id = s.student_id
                 JOIN tblsection sec ON e.section_id = sec.section_id
+                JOIN tblcourse c ON sec.course_id = c.course_id
                 WHERE e.is_deleted = 0
                 ORDER BY e.enrollment_id DESC";
         $result = $conn->query($sql);
@@ -33,7 +34,7 @@ switch ($action) {
         $student_id = $_POST['student_id'] ?? 0;
         $section_id = $_POST['section_id'] ?? 0;
 
-        // Duplicate check: Prevent enrolling the same student in the same section
+        // Duplicate check
         $check = $conn->prepare("SELECT COUNT(*) FROM tblenrollment WHERE student_id=? AND section_id=? AND is_deleted=0");
         $check->bind_param("ii", $student_id, $section_id);
         $check->execute();
@@ -48,12 +49,7 @@ switch ($action) {
 
         $stmt = $conn->prepare("INSERT INTO tblenrollment (student_id, section_id, status, letter_grade, date_enrolled, is_deleted)
                                 VALUES (?, ?, ?, ?, CURDATE(), 0)");
-        $stmt->bind_param("iiss",
-            $student_id,
-            $section_id,
-            $_POST['status'],
-            $_POST['final_grade']
-        );
+        $stmt->bind_param("iiss", $student_id, $section_id, $_POST['status'], $_POST['final_grade']);
         if ($stmt->execute()) {
             echo json_encode(['status' => 'success']);
         } else {
@@ -63,13 +59,7 @@ switch ($action) {
 
     case 'update':
         $stmt = $conn->prepare("UPDATE tblenrollment SET student_id=?, section_id=?, status=?, letter_grade=? WHERE enrollment_id=? AND is_deleted=0");
-        $stmt->bind_param("iissi",
-            $_POST['student_id'],
-            $_POST['section_id'],
-            $_POST['status'],
-            $_POST['final_grade'],
-            $_POST['enrollment_id']
-        );
+        $stmt->bind_param("iissi", $_POST['student_id'], $_POST['section_id'], $_POST['status'], $_POST['final_grade'], $_POST['enrollment_id']);
         if ($stmt->execute()) {
             echo json_encode(['status' => 'updated']);
         } else {
@@ -77,7 +67,7 @@ switch ($action) {
         }
         break;
 
-    case 'delete': // This is now a soft-delete (archive)
+    case 'delete':
         $stmt = $conn->prepare("UPDATE tblenrollment SET is_deleted=1 WHERE enrollment_id=?");
         $stmt->bind_param("i", $_POST['enrollment_id']);
         if ($stmt->execute()) {
@@ -88,16 +78,40 @@ switch ($action) {
         break;
 
     case 'students':
-        $result = $conn->query("SELECT student_id AS id, CONCAT(last_name, ', ', first_name) AS name FROM tblstudent ORDER BY last_name ASC");
+        $result = $conn->query("SELECT student_id AS id, CONCAT(last_name, ', ', first_name) AS name FROM tblstudent WHERE is_deleted=0 ORDER BY last_name ASC");
         echo json_encode($result->fetch_all(MYSQLI_ASSOC));
         break;
 
-    case 'sections':
-        $result = $conn->query("SELECT s.section_id AS id, CONCAT(s.section_code, ' - ', c.course_title) AS name 
-                                FROM tblsection s
-                                JOIN tblcourse c ON s.course_id = c.course_id
-                                ORDER BY s.section_code ASC");
+    // ✅ NEW ACTION: Fetch all courses for the "Irregular Student" filter
+    case 'courses':
+        $result = $conn->query("SELECT course_id AS id, CONCAT(course_code, ' - ', course_title) AS name FROM tblcourse WHERE is_deleted=0 ORDER BY course_code ASC");
         echo json_encode($result->fetch_all(MYSQLI_ASSOC));
+        break;
+
+    // ✅ UPDATED ACTION: Filter sections by course_id if provided
+    case 'sections':
+        $course_id = isset($_GET['course_id']) ? (int)$_GET['course_id'] : 0;
+        
+        if ($course_id > 0) {
+            // Filter by specific course (Subject-based enrollment)
+            $stmt = $conn->prepare("SELECT s.section_id AS id, 
+                                           CONCAT(s.section_code, ' (', s.day_pattern, ' ', TIME_FORMAT(s.start_time, '%H:%i'), '-', TIME_FORMAT(s.end_time, '%H:%i'), ')') AS name 
+                                    FROM tblsection s
+                                    WHERE s.course_id = ? AND s.is_deleted = 0 
+                                    ORDER BY s.section_code ASC");
+            $stmt->bind_param("i", $course_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            echo json_encode($result->fetch_all(MYSQLI_ASSOC));
+        } else {
+            // Show all sections (default)
+            $result = $conn->query("SELECT s.section_id AS id, CONCAT(s.section_code, ' - ', c.course_title) AS name 
+                                    FROM tblsection s
+                                    JOIN tblcourse c ON s.course_id = c.course_id
+                                    WHERE s.is_deleted = 0
+                                    ORDER BY s.section_code ASC");
+            echo json_encode($result->fetch_all(MYSQLI_ASSOC));
+        }
         break;
 
     default:

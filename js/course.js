@@ -2,21 +2,38 @@ $(document).ready(function () {
     // 🔹 Load departments into dropdown
     function loadDepartments(select) {
         $.get('course_crud.php?action=departments', function (data) {
-            const currentVal = select.val();
             select.empty().append('<option value="">Select Department</option>');
             data.forEach(function (dept) {
                 select.append(`<option value="${dept.id}">${dept.name}</option>`);
             });
-            select.val(currentVal);
         });
     }
 
     loadDepartments($('#addForm select[name="dept_id"]'));
 
+    // ✅ Initialize Select2
+    $('#addModal, #editModal').on('shown.bs.modal', function () {
+        const modal = $(this);
+        modal.find('select').each(function() {
+            $(this).select2({
+                theme: 'bootstrap-5',
+                dropdownParent: modal,
+                width: '100%',
+                placeholder: 'Select department...'
+            });
+        });
+    });
+
+    // Reset Select2
+    $('#addModal').on('hidden.bs.modal', function () {
+        $('#addForm')[0].reset();
+        $('#addForm select').val('').trigger('change');
+    });
+
     // 🔹 Initialize DataTable
     const table = $('#courseTable').DataTable({
         ajax: {
-            url: 'course_crud.php?action=read', // Correct path
+            url: 'course_crud.php?action=read',
             dataSrc: ''
         },
         columns: [
@@ -56,12 +73,10 @@ $(document).ready(function () {
         e.preventDefault();
         $.post('course_crud.php?action=create', $(this).serialize(), null, 'json')
             .done(function (res) {
-                // ✅ Handle different responses from the server
                 if (res.status === 'duplicate') {
                     Swal.fire('Duplicate', 'A course with this code or title already exists.', 'error');
                 } else if (res.status === 'success') {
                     $('#addModal').modal('hide');
-                    $('#addForm')[0].reset();
                     table.ajax.reload(null, false);
                     Swal.fire('Success', 'Course added successfully!', 'success');
                 } else {
@@ -83,9 +98,11 @@ $(document).ready(function () {
         modal.find('[name="units"]').val(btn.data('units'));
         modal.find('[name="lecture_hours"]').val(btn.data('lecture'));
         modal.find('[name="lab_hours"]').val(btn.data('lab'));
+        
         const deptSelect = modal.find('select[name="dept_id"]');
         loadDepartments(deptSelect);
-        setTimeout(() => { deptSelect.val(btn.data('dept')); }, 200);
+        setTimeout(() => { deptSelect.val(btn.data('dept')).trigger('change'); }, 200);
+        
         modal.modal('show');
     });
 

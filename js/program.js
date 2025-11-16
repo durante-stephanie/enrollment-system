@@ -1,7 +1,6 @@
 $(document).ready(function () {
     // Load departments into a select dropdown
     function loadDepartments(select) {
-        // Path is relative to the index.php page in the 'program' module
         $.get('program_crud.php?action=departments', function (data) {
             select.empty().append('<option value="">Select Department</option>');
             data.forEach(function (dept) {
@@ -13,9 +12,28 @@ $(document).ready(function () {
     // Load departments for the "Add" form initially
     loadDepartments($('#addForm select[name="dept_id"]'));
 
+    // ✅ Initialize Select2
+    $('#addModal, #editModal').on('shown.bs.modal', function () {
+        const modal = $(this);
+        modal.find('select').each(function() {
+            $(this).select2({
+                theme: 'bootstrap-5',
+                dropdownParent: modal,
+                width: '100%',
+                placeholder: 'Select department...'
+            });
+        });
+    });
+
+    // Reset Select2
+    $('#addModal').on('hidden.bs.modal', function () {
+        $('#addForm')[0].reset();
+        $('#addForm select').val('').trigger('change');
+    });
+
     const table = $('#programTable').DataTable({
         ajax: {
-            url: 'program_crud.php?action=read', // Correct relative path
+            url: 'program_crud.php?action=read',
             dataSrc: ''
         },
         columns: [
@@ -57,7 +75,6 @@ $(document).ready(function () {
         table.column(2).search(val ? '^' + val + '$' : '', true, false).draw();
     });
 
-    // Add, Edit, Delete functions remain the same...
     // Add Program
     $('#addForm').on('submit', function (e) {
         e.preventDefault();
@@ -67,7 +84,6 @@ $(document).ready(function () {
                     Swal.fire('Duplicate', 'This program code or name already exists!', 'error');
                 } else if (res.status === 'success') {
                     $('#addModal').modal('hide');
-                    $('#addForm')[0].reset();
                     table.ajax.reload(null, false);
                     Swal.fire('Success', 'Program added successfully!', 'success');
                 } else {
@@ -84,9 +100,11 @@ $(document).ready(function () {
         modal.find('input[name="program_id"]').val($(this).data('id'));
         modal.find('input[name="program_code"]').val($(this).data('code'));
         modal.find('input[name="program_name"]').val($(this).data('name'));
+        
         const deptSelect = modal.find('select[name="dept_id"]');
         loadDepartments(deptSelect);
-        setTimeout(() => { deptSelect.val($(this).data('dept')); }, 200);
+        setTimeout(() => { deptSelect.val($(this).data('dept')).trigger('change'); }, 200);
+        
         modal.modal('show');
     });
 
