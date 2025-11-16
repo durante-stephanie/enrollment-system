@@ -4,9 +4,8 @@ $(document).ready(function () {
         $.get('prerequisite_crud.php?action=courses', function (data) {
             const courseSelect = $(`#${formId} select[name="course_id"]`);
             const prereqSelect = $(`#${formId} select[name="prereq_course_id"]`);
-            const currentCourse = courseSelect.val();
-            const currentPrereq = prereqSelect.val();
-
+            
+            // Clear and add default option
             courseSelect.empty().append('<option value="">Select a Course</option>');
             prereqSelect.empty().append('<option value="">Select a Prerequisite</option>');
 
@@ -14,13 +13,39 @@ $(document).ready(function () {
                 courseSelect.append(`<option value="${c.id}">${c.name}</option>`);
                 prereqSelect.append(`<option value="${c.id}">${c.name}</option>`);
             });
-
-            courseSelect.val(currentCourse);
-            prereqSelect.val(currentPrereq);
         });
     }
 
     loadCourses('addForm');
+
+    // ✅ Initialize Select2 for Modals
+    $('#addModal, #editModal').on('shown.bs.modal', function () {
+        const modal = $(this);
+        modal.find('select').each(function() {
+            $(this).select2({
+                theme: 'bootstrap-5',
+                dropdownParent: modal,
+                width: '100%',
+                placeholder: 'Search for a course...'
+            });
+        });
+    });
+
+    // Reset Add Form
+    $('#addModal').on('hidden.bs.modal', function () {
+        $('#addForm')[0].reset();
+        $('#addForm select').val('').trigger('change');
+    });
+    
+    // NOTE: Since the Add form for prerequisites was inline in your original HTML (not in a modal), 
+    // you might need to initialize it directly if it's not in a modal:
+    if ($('#addForm').closest('.modal').length === 0) {
+        $('#addForm select').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+             placeholder: 'Search...'
+        });
+    }
 
     const table = $('#prereqTable').DataTable({
         ajax: {
@@ -28,8 +53,24 @@ $(document).ready(function () {
             dataSrc: ''
         },
         columns: [
-            { data: 'course_code' },
-            { data: 'prereq_code' },
+            { 
+                data: null,
+                render: function (data) {
+                    return `<div class="d-flex flex-column">
+                                <span class="fw-bold">${data.course_code}</span>
+                                <small class="text-muted">${data.course_title}</small>
+                            </div>`;
+                }
+            },
+            { 
+                data: null,
+                render: function (data) {
+                    return `<div class="d-flex flex-column">
+                                <span class="fw-bold">${data.prereq_code}</span>
+                                <small class="text-muted">${data.prereq_title}</small>
+                            </div>`;
+                }
+            },
             {
                 data: null, orderable: false,
                 render: function (data) {
@@ -38,7 +79,7 @@ $(document).ready(function () {
                             data-course-id="${data.course_id}" 
                             data-prereq-id="${data.prereq_course_id}">Edit</button>
                         <button class="btn btn-sm btn-danger deleteBtn"
-                            data-course-id="${data.course_id}"
+                            data-course-id="${data.course_id}" 
                             data-prereq-id="${data.prereq_course_id}">Remove</button>
                     `;
                 }
@@ -56,7 +97,10 @@ $(document).ready(function () {
                 } else if (res.status === 'self_prereq') {
                     Swal.fire('Invalid', 'A course cannot be its own prerequisite.', 'warning');
                 } else if (res.status === 'success') {
+                    // Manually reset if not in modal
                     $('#addForm')[0].reset();
+                    $('#addForm select').val('').trigger('change'); 
+                    
                     table.ajax.reload(null, false);
                     Swal.fire('Success', 'Prerequisite added successfully!', 'success');
                 } else {
@@ -77,8 +121,8 @@ $(document).ready(function () {
         loadCourses('editForm');
         
         setTimeout(() => {
-            modal.find('[name="course_id"]').val(courseId);
-            modal.find('[name="prereq_course_id"]').val(prereqId);
+            modal.find('[name="course_id"]').val(courseId).trigger('change');
+            modal.find('[name="prereq_course_id"]').val(prereqId).trigger('change');
         }, 250);
 
         modal.modal('show');
@@ -104,7 +148,6 @@ $(document).ready(function () {
         const courseId = $(this).data('course-id');
         const prereqId = $(this).data('prereq-id');
         
-        // ✅ FIX: Updated Swal text for clarity
         Swal.fire({
             title: 'Archive this prerequisite?',
             text: 'This will mark the relationship as inactive.',

@@ -8,10 +8,12 @@ $action = $_GET['action'] ?? '';
 
 switch ($action) {
     case 'read':
-        // ✅ FIX: Added "cp.is_deleted = 0" to only show active links
+        // ✅ UPDATED QUERY: Now selects course_title and prereq_title
         $sql = "SELECT cp.course_id, cp.prereq_course_id,
                        c1.course_code AS course_code,
-                       c2.course_code AS prereq_code
+                       c1.course_title AS course_title,
+                       c2.course_code AS prereq_code,
+                       c2.course_title AS prereq_title
                 FROM tblcourse_prerequisite cp
                 JOIN tblcourse c1 ON cp.course_id = c1.course_id
                 JOIN tblcourse c2 ON cp.prereq_course_id = c2.course_id
@@ -35,7 +37,6 @@ switch ($action) {
             exit;
         }
 
-        // ✅ FIX: Check for active duplicates only
         $check = $conn->prepare("SELECT COUNT(*) FROM tblcourse_prerequisite WHERE course_id=? AND prereq_course_id=? AND is_deleted = 0");
         $check->bind_param("ii", $course_id, $prereq_id);
         $check->execute();
@@ -47,7 +48,6 @@ switch ($action) {
             exit;
         }
         
-        // ✅ FIX: Explicitly set is_deleted to 0
         $stmt = $conn->prepare("INSERT INTO tblcourse_prerequisite (course_id, prereq_course_id, is_deleted) VALUES (?, ?, 0)");
         $stmt->bind_param("ii", $course_id, $prereq_id);
         if ($stmt->execute()) {
@@ -65,12 +65,10 @@ switch ($action) {
 
         $conn->begin_transaction();
         try {
-            // ✅ FIX: Soft-delete the old record
             $delete_stmt = $conn->prepare("UPDATE tblcourse_prerequisite SET is_deleted = 1 WHERE course_id=? AND prereq_course_id=?");
             $delete_stmt->bind_param("ii", $old_course_id, $old_prereq_id);
             $delete_stmt->execute();
 
-            // Insert the new record
             $insert_stmt = $conn->prepare("INSERT INTO tblcourse_prerequisite (course_id, prereq_course_id, is_deleted) VALUES (?, ?, 0)");
             $insert_stmt->bind_param("ii", $new_course_id, $new_prereq_id);
             $insert_stmt->execute();
@@ -85,7 +83,6 @@ switch ($action) {
         break;
 
     case 'delete':
-        // ✅ FIX: Changed from DELETE to UPDATE for soft-delete
         $stmt = $conn->prepare("UPDATE tblcourse_prerequisite SET is_deleted = 1 WHERE course_id=? AND prereq_course_id=?");
         $stmt->bind_param("ii", $_POST['course_id'], $_POST['prereq_course_id']);
         if ($stmt->execute()) {
@@ -96,7 +93,8 @@ switch ($action) {
         break;
 
     case 'courses':
-        $result = $conn->query("SELECT course_id AS id, course_code AS name FROM tblcourse WHERE is_deleted = 0 ORDER BY course_code ASC");
+        // ✅ UPDATED: Concatenates Code and Title for dropdowns
+        $result = $conn->query("SELECT course_id AS id, CONCAT(course_code, ' - ', course_title) AS name FROM tblcourse WHERE is_deleted = 0 ORDER BY course_code ASC");
         echo json_encode($result->fetch_all(MYSQLI_ASSOC));
         break;
 
