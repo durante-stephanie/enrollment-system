@@ -6,13 +6,14 @@ $(document).ready(function () {
             data.forEach(function (dept) {
                 select.append(`<option value="${dept.dept_id}">${dept.dept_name}</option>`);
             });
+            // ✅ Notify Select2
+            select.trigger('change');
         });
     }
 
-    // Load departments for the "Add" form initially
     loadDepartments($('#addForm select[name="dept_id"]'));
 
-    // ✅ Initialize Select2
+    // Initialize Select2
     $('#addModal, #editModal').on('shown.bs.modal', function () {
         const modal = $(this);
         modal.find('select').each(function() {
@@ -90,7 +91,7 @@ $(document).ready(function () {
         
         const deptSelect = modal.find('select[name="dept_id"]');
         loadDepartments(deptSelect);
-        setTimeout(() => { deptSelect.val(btn.data('dept')).trigger('change'); }, 250);
+        setTimeout(() => { deptSelect.val(btn.data('dept')).trigger('change'); }, 300);
         
         modal.modal('show');
     });

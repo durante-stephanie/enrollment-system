@@ -8,10 +8,12 @@ $action = $_GET['action'] ?? '';
 
 switch ($action) {
     case 'read':
+        // ✅ UPDATED: Added c.course_title so we can display it in the table
         $sql = "SELECT s.section_id, s.section_code, s.course_id, s.term_id, s.instructor_id, s.room_id, s.day_pattern, s.start_time, s.end_time, s.max_capacity,
-                       c.course_code, t.term_code, 
+                       c.course_code, c.course_title, 
+                       t.term_code, 
                        CONCAT(i.last_name, ', ', i.first_name) AS instructor_name,
-                       r.room_code
+                       r.room_code, r.building
                 FROM tblsection s
                 JOIN tblcourse c ON s.course_id = c.course_id
                 JOIN tblterm t ON s.term_id = t.term_id
@@ -31,7 +33,7 @@ switch ($action) {
     case 'create':
         $section_code = trim($_POST['section_code']);
         $term_id = $_POST['term_id'];
-        // Check for duplicate section code within the same term
+        
         $check = $conn->prepare("SELECT COUNT(*) FROM tblsection WHERE section_code=? AND term_id=? AND is_deleted=0");
         $check->bind_param("si", $section_code, $term_id);
         $check->execute();
@@ -74,21 +76,24 @@ switch ($action) {
         }
         break;
 
-    // Cases for populating dropdowns
     case 'courses':
-        $result = $conn->query("SELECT course_id AS id, course_code AS name FROM tblcourse WHERE is_deleted = 0 ORDER BY course_code ASC");
+        // ✅ UPDATED: Concatenate code and title for dropdowns
+        $result = $conn->query("SELECT course_id AS id, CONCAT(course_code, ' - ', course_title) AS name FROM tblcourse WHERE is_deleted = 0 ORDER BY course_code ASC");
         echo json_encode($result->fetch_all(MYSQLI_ASSOC));
         break;
+        
     case 'terms':
         $result = $conn->query("SELECT term_id AS id, term_code AS name FROM tblterm WHERE is_deleted = 0 ORDER BY term_code DESC");
         echo json_encode($result->fetch_all(MYSQLI_ASSOC));
         break;
+        
     case 'instructors':
         $result = $conn->query("SELECT instructor_id AS id, CONCAT(last_name, ', ', first_name) AS name FROM tblinstructor WHERE is_deleted = 0 ORDER BY last_name ASC");
         echo json_encode($result->fetch_all(MYSQLI_ASSOC));
         break;
+        
     case 'rooms':
-        $result = $conn->query("SELECT room_id AS id, room_code AS name FROM tblroom WHERE is_deleted = 0 ORDER BY room_code ASC");
+        $result = $conn->query("SELECT room_id AS id, CONCAT(building, ' - ', room_code, ' (Cap: ', capacity, ')') AS name FROM tblroom WHERE is_deleted = 0 ORDER BY room_code ASC");
         echo json_encode($result->fetch_all(MYSQLI_ASSOC));
         break;
 

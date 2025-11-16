@@ -5,6 +5,10 @@ $(document).ready(function () {
             const courseSelect = $(`#${formId} select[name="course_id"]`);
             const prereqSelect = $(`#${formId} select[name="prereq_course_id"]`);
             
+            // Save current value if editing
+            const currentCourse = courseSelect.val();
+            const currentPrereq = prereqSelect.val();
+
             // Clear and add default option
             courseSelect.empty().append('<option value="">Select a Course</option>');
             prereqSelect.empty().append('<option value="">Select a Prerequisite</option>');
@@ -13,13 +17,20 @@ $(document).ready(function () {
                 courseSelect.append(`<option value="${c.id}">${c.name}</option>`);
                 prereqSelect.append(`<option value="${c.id}">${c.name}</option>`);
             });
+
+            // Restore value and notify Select2
+            if (currentCourse) courseSelect.val(currentCourse);
+            if (currentPrereq) prereqSelect.val(currentPrereq);
+            
+            courseSelect.trigger('change');
+            prereqSelect.trigger('change');
         });
     }
 
     loadCourses('addForm');
 
-    // ✅ Initialize Select2 for Modals
-    $('#addModal, #editModal').on('shown.bs.modal', function () {
+    // ✅ Initialize Select2 for Modals (Edit)
+    $('#editModal').on('shown.bs.modal', function () {
         const modal = $(this);
         modal.find('select').each(function() {
             $(this).select2({
@@ -31,21 +42,22 @@ $(document).ready(function () {
         });
     });
 
-    // Reset Add Form
-    $('#addModal').on('hidden.bs.modal', function () {
-        $('#addForm')[0].reset();
-        $('#addForm select').val('').trigger('change');
-    });
-    
-    // NOTE: Since the Add form for prerequisites was inline in your original HTML (not in a modal), 
-    // you might need to initialize it directly if it's not in a modal:
-    if ($('#addForm').closest('.modal').length === 0) {
+    // ✅ Initialize Select2 for the Inline Add Form
+    // We check if the add form exists and is not inside a modal
+    if ($('#addForm').length > 0 && $('#addForm').closest('.modal').length === 0) {
         $('#addForm select').select2({
             theme: 'bootstrap-5',
             width: '100%',
-             placeholder: 'Search...'
+            placeholder: 'Search...'
         });
     }
+
+    // Reset Add Form
+    $('#addForm button[type="reset"]').on('click', function() {
+         setTimeout(() => {
+            $('#addForm select').val('').trigger('change');
+         }, 50);
+    });
 
     const table = $('#prereqTable').DataTable({
         ajax: {
@@ -97,7 +109,6 @@ $(document).ready(function () {
                 } else if (res.status === 'self_prereq') {
                     Swal.fire('Invalid', 'A course cannot be its own prerequisite.', 'warning');
                 } else if (res.status === 'success') {
-                    // Manually reset if not in modal
                     $('#addForm')[0].reset();
                     $('#addForm select').val('').trigger('change'); 
                     
@@ -120,10 +131,11 @@ $(document).ready(function () {
         
         loadCourses('editForm');
         
+        // Set values after a short delay to allow options to populate
         setTimeout(() => {
             modal.find('[name="course_id"]').val(courseId).trigger('change');
             modal.find('[name="prereq_course_id"]').val(prereqId).trigger('change');
-        }, 250);
+        }, 300);
 
         modal.modal('show');
     });

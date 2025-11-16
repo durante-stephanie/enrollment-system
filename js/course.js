@@ -1,17 +1,19 @@
 $(document).ready(function () {
-    // 🔹 Load departments into dropdown
+    // Load departments into dropdown
     function loadDepartments(select) {
         $.get('course_crud.php?action=departments', function (data) {
             select.empty().append('<option value="">Select Department</option>');
             data.forEach(function (dept) {
                 select.append(`<option value="${dept.id}">${dept.name}</option>`);
             });
+            // ✅ Notify Select2
+            select.trigger('change');
         });
     }
 
     loadDepartments($('#addForm select[name="dept_id"]'));
 
-    // ✅ Initialize Select2
+    // Initialize Select2
     $('#addModal, #editModal').on('shown.bs.modal', function () {
         const modal = $(this);
         modal.find('select').each(function() {
@@ -30,7 +32,6 @@ $(document).ready(function () {
         $('#addForm select').val('').trigger('change');
     });
 
-    // 🔹 Initialize DataTable
     const table = $('#courseTable').DataTable({
         ajax: {
             url: 'course_crud.php?action=read',
@@ -57,7 +58,7 @@ $(document).ready(function () {
         responsive: true
     });
 
-    // 🔹 Department filter
+    // Department filter
     $('#customFilter').html(`<select id="deptFilter" class="form-select form-select-sm" style="width:200px;"><option value="">All Departments</option></select>`);
     $.get('course_crud.php?action=departments', function (data) {
         data.forEach(function (dept) {
@@ -68,7 +69,7 @@ $(document).ready(function () {
         table.column(5).search(this.value ? `^${this.value}$` : '', true, false).draw();
     });
 
-    // 🔹 Add Course
+    // Add Course
     $('#addForm').on('submit', function (e) {
         e.preventDefault();
         $.post('course_crud.php?action=create', $(this).serialize(), null, 'json')
@@ -88,7 +89,7 @@ $(document).ready(function () {
             });
     });
 
-    // 🔹 Open Edit Modal
+    // Open Edit Modal
     $(document).on('click', '.editBtn', function () {
         const modal = $('#editModal');
         const btn = $(this);
@@ -101,12 +102,12 @@ $(document).ready(function () {
         
         const deptSelect = modal.find('select[name="dept_id"]');
         loadDepartments(deptSelect);
-        setTimeout(() => { deptSelect.val(btn.data('dept')).trigger('change'); }, 200);
+        setTimeout(() => { deptSelect.val(btn.data('dept')).trigger('change'); }, 300);
         
         modal.modal('show');
     });
 
-    // 🔹 Update Course
+    // Update Course
     $('#editForm').on('submit', function (e) {
         e.preventDefault();
         $.post('course_crud.php?action=update', $(this).serialize(), null, 'json')
@@ -126,7 +127,7 @@ $(document).ready(function () {
             });
     });
 
-    // 🔹 Soft Delete Course
+    // Soft Delete Course
     $(document).on('click', '.deleteBtn', function () {
         const id = $(this).data('id');
         Swal.fire({

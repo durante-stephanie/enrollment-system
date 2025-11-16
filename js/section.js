@@ -8,25 +8,25 @@ $(document).ready(function () {
             room_id: 'rooms'
         };
         for (const [field, action] of Object.entries(selects)) {
-            // Note: 'section_crud.php' path depends on where this JS is called. 
-            // Assuming relative path from index.php works as per your setup.
             $.get(`section_crud.php?action=${action}`, function (data) {
                 const select = $(`#${formId} select[name="${field}"]`);
                 const currentVal = select.val();
                 select.empty().append(`<option value="">Select...</option>`);
                 data.forEach(item => select.append(`<option value="${item.id}">${item.name}</option>`));
                 
-                // Trigger change for Select2 to update
+                // Restore value if exists
                 if (currentVal) {
-                     select.val(currentVal).trigger('change');
+                     select.val(currentVal);
                 }
+                // ✅ ALWAYS trigger change so Select2 knows options are updated
+                select.trigger('change');
             });
         }
     }
 
     loadFormDropdowns('addForm');
 
-    // ✅ Initialize Select2 on Modal Open
+    // Initialize Select2 on Modal Open
     $('#addModal, #editModal').on('shown.bs.modal', function () {
         const modal = $(this);
         modal.find('select').each(function() {
@@ -51,8 +51,29 @@ $(document).ready(function () {
             dataSrc: ''
         },
         columns: [
-            { data: 'section_code' }, { data: 'course_code' }, { data: 'term_code' },
-            { data: 'instructor_name' }, { data: 'room_code' },
+            { data: 'section_code' }, 
+            { 
+                // ✅ UPDATED: Show Course Code AND Title in a stacked format
+                data: null,
+                render: function (data) {
+                    return `<div class="d-flex flex-column">
+                                <span class="fw-bold">${data.course_code}</span>
+                                <small class="text-muted">${data.course_title}</small>
+                            </div>`;
+                }
+            }, 
+            { data: 'term_code' },
+            { data: 'instructor_name' }, 
+            { 
+                // ✅ UPDATED: Show Room Code AND Building in a stacked format
+                data: null,
+                render: function (data) {
+                    return `<div class="d-flex flex-column">
+                                <span class="fw-bold">${data.room_code}</span>
+                                <small class="text-muted">${data.building}</small>
+                            </div>`;
+                }
+            },
             { data: null, render: d => `${d.day_pattern} ${d.start_time.substring(0,5)}–${d.end_time.substring(0,5)}` },
             { data: 'max_capacity' },
             {
@@ -65,7 +86,7 @@ $(document).ready(function () {
         ]
     });
 
-    // Filters (Optional: Make these Select2 as well if you want)
+    // Filters
     $('#customFilter').html(`
         <select id="termFilter" class="form-select form-select-sm" style="width:200px; display:inline-block; margin-right: 5px;"><option value="">Filter by Term</option></select>
         <select id="courseFilter" class="form-select form-select-sm" style="width:200px; display:inline-block;"><option value="">Filter by Course</option></select>
@@ -74,7 +95,7 @@ $(document).ready(function () {
     $.get('section_crud.php?action=courses', data => data.forEach(item => $('#courseFilter').append(`<option value="${item.name}">${item.name}</option>`)));
 
     $('#termFilter').on('change', function() { table.column(2).search(this.value ? `^${this.value}$` : '', true, false).draw(); });
-    $('#courseFilter').on('change', function() { table.column(1).search(this.value ? `^${this.value}$` : '', true, false).draw(); });
+    $('#courseFilter').on('change', function() { table.column(1).search(this.value ? this.value.split(' - ')[0] : '', true, false).draw(); });
 
     // Add Section
     $('#addForm').on('submit', function (e) {
@@ -85,7 +106,6 @@ $(document).ready(function () {
                     Swal.fire('Duplicate', 'This section code already exists for the selected term.', 'error');
                 } else if (res.status === 'success') {
                     $('#addModal').modal('hide');
-                    // Reset handled by hidden.bs.modal event
                     table.ajax.reload(null, false);
                     Swal.fire('Success', 'Section added successfully!', 'success');
                 } else {
@@ -107,13 +127,12 @@ $(document).ready(function () {
         
         loadFormDropdowns('editForm');
         
-        // Delay value setting to allow options to load, then trigger Select2 update
         setTimeout(() => {
             modal.find('[name="course_id"]').val(data.course_id).trigger('change');
             modal.find('[name="term_id"]').val(data.term_id).trigger('change');
             modal.find('[name="instructor_id"]').val(data.instructor_id).trigger('change');
             modal.find('[name="room_id"]').val(data.room_id).trigger('change');
-        }, 250);
+        }, 300);
         
         modal.modal('show');
     });
