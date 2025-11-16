@@ -3,7 +3,7 @@
 ?>
 <div class="sidebar">
     <h4>📋 SIS</h4>
-    <a href="../dashboard.php" class="<?= ($activePage == 'dashboard') ? 'active' : '' ?>">
+    <a href="../dashboard/dashboard.php" class="<?= ($activePage == 'dashboard') ? 'active' : '' ?>">
         <i class="fas fa-th-large"></i> Dashboard
     </a>
     <a href="../department/index.php" class="<?= ($activePage == 'departments') ? 'active' : '' ?>">

@@ -1,32 +1,251 @@
+/* --- Color Palette Variables --- */
+:root {
+    --navy: #2F4156;
+    --teal: #567C8D;
+    --sky-blue: #C8D9E6;
+    --beige: #F5EFEB;
+    --white: #FFFFFF;
+    --text-dark: #333333;
+    --text-light: #f8f9fa;
+    --shadow-sm: 0 2px 8px rgba(47, 65, 86, 0.08);
+    --shadow-md: 0 5px 15px rgba(47, 65, 86, 0.15);
+    --radius-lg: 20px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+}
+
+body {
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+    background-color: var(--beige); /* Palette Beige Background */
+    color: var(--text-dark);
+    margin: 0;
+    min-height: 100vh;
+}
+
+/* --- Sidebar Styling (The "2nd Image" Look) --- */
 .sidebar {
-  width: 220px;
-  height: 100vh;
-  position: fixed;
-  top: 0; left: 0;
-  background: #0d1b2a;
-  color: #fff;
-  padding-top: 20px;
+    width: 260px; /* Slightly wider for better spacing */
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: var(--navy); /* Palette Navy */
+    color: var(--white);
+    display: flex;
+    flex-direction: column;
+    padding: 25px 15px;
+    z-index: 1000;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+    /* Optional: Rounded top-right/bottom-right if you want a floating panel look */
+    border-top-right-radius: 0px; 
+    border-bottom-right-radius: 0px;
 }
+
 .sidebar h4 {
-  text-align: center;
-  margin-bottom: 30px;
-  font-weight: bold;
+    text-align: center;
+    margin-bottom: 40px;
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 1.5rem;
 }
+
 .sidebar a {
-  display: flex;
-  align-items: center;
-  padding: 12px 20px;
-  color: #fff;
-  text-decoration: none;
-  font-size: 15px;
-  transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: var(--sky-blue); /* Light text for contrast */
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    border-radius: var(--radius-md); /* Rounded Pill Shape */
+    transition: all 0.3s ease;
 }
-.sidebar a i { margin-right: 10px; }
-.sidebar a:hover, .sidebar a.active {
-  background: #1b263b;
-  border-left: 4px solid #00b4d8;
+
+.sidebar a i {
+    width: 25px; /* Fixed width for icon alignment */
+    margin-right: 10px;
+    font-size: 1.1rem;
 }
+
+/* Hover State */
+.sidebar a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--white);
+    transform: translateX(5px); /* Subtle movement */
+}
+
+/* Active State (The "Teal" Highlight) */
+.sidebar a.active {
+    background-color: var(--teal); /* Palette Teal */
+    color: var(--white);
+    box-shadow: 0 4px 15px rgba(86, 124, 141, 0.4); /* Glow effect */
+    font-weight: 600;
+}
+
+/* --- Main Content Area --- */
 .content {
-  margin-left: 220px;
-  padding: 20px;
+    margin-left: 260px; /* Match sidebar width */
+    padding: 30px 40px;
+    min-height: 100vh;
+}
+
+h2.fw-bold {
+    color: var(--navy);
+    font-weight: 800 !important;
+    letter-spacing: -0.5px;
+}
+
+/* --- Cards --- */
+.card {
+    background-color: var(--white);
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    /* Subtle lift effect on hover */
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 20px 25px;
+}
+
+/* --- Tables --- */
+.table {
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table thead th {
+    background-color: var(--navy);
+    color: var(--white);
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    padding: 15px;
+}
+
+.table thead th:first-child {
+    border-top-left-radius: var(--radius-md);
+}
+.table thead th:last-child {
+    border-top-right-radius: var(--radius-md);
+}
+
+.table tbody td {
+    padding: 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f0;
+    color: #555;
+    font-size: 0.95rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8fcff;
+}
+
+/* --- Buttons --- */
+.btn {
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background-color: var(--navy);
+    border-color: var(--navy);
+}
+
+.btn-primary:hover {
+    background-color: #1e2b3a;
+    border-color: #1e2b3a;
+}
+
+.btn-success {
+    background-color: var(--teal);
+    border-color: var(--teal);
+}
+
+.btn-success:hover {
+    background-color: #466575;
+    border-color: #466575;
+}
+
+.btn-danger {
+    background-color: #e63946; /* Keep red for danger, or use a mute red */
+    border: none;
+}
+
+/* --- Form Elements (Select2 & Inputs) --- */
+.form-control, .form-select {
+    border-radius: var(--radius-sm);
+    border: 1px solid #e0e0e0;
+    padding: 10px 15px;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 0.25rem rgba(86, 124, 141, 0.25);
+}
+
+/* Select2 Customization to match theme */
+.select2-container--bootstrap-5 .select2-selection {
+    border-radius: var(--radius-sm) !important;
+    border: 1px solid #e0e0e0 !important;
+    padding: 6px 10px !important;
+}
+.select2-container--bootstrap-5 .select2-dropdown .select2-results__option--highlighted[aria-selected] {
+    background-color: var(--teal) !important;
+}
+
+/* --- Modals --- */
+.modal-content {
+    border-radius: var(--radius-lg);
+    border: none;
+    box-shadow: var(--shadow-md);
+}
+
+.modal-header {
+    background-color: var(--navy);
+    color: var(--white);
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+}
+
+.modal-title {
+    font-weight: 600;
+}
+
+.btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--teal);
 }
