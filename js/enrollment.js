@@ -1,94 +1,92 @@
 $(document).ready(function () {
-    // Function to load dropdowns for Add/Edit forms
-    function loadFormDropdowns(formId) {
-        const studentSelect = $(`#${formId} select[name="student_id"]`);
-        const sectionSelect = $(`#${formId} select[name="section_id"]`);
-
-        $.get('enrollment_crud.php?action=students', function (data) {
-            studentSelect.empty().append('<option value="">Select Student</option>');
-            data.forEach(item => studentSelect.append(`<option value="${item.id}">${item.name}</option>`));
-        });
         
-        // Load all sections initially
-        loadSections(sectionSelect);
+    function loadStudents(selectElement) {
+        $.get('enrollment_crud.php?action=students', function (data) {
+            const currentVal = selectElement.val();
+            selectElement.empty().append('<option value="">Select Student</option>');
+            data.forEach(item => selectElement.append(`<option value="${item.id}">${item.name}</option>`));
+            if(currentVal) selectElement.val(currentVal);
+            selectElement.trigger('change');
+        });
     }
 
     function loadSections(selectElement, courseId = 0) {
         let url = 'enrollment_crud.php?action=sections';
+        // Only filter if courseId is provided (for Irregular)
         if (courseId > 0) {
             url += `&course_id=${courseId}`;
         }
 
         $.get(url, function (data) {
+            const currentVal = selectElement.val();
             selectElement.empty().append('<option value="">Select Section</option>');
-            if (data.length === 0) {
-                selectElement.append('<option value="" disabled>No sections available for this subject</option>');
+            if (data.length === 0 && courseId > 0) {
+                selectElement.append('<option value="" disabled>No sections found for this subject</option>');
+            } else if (data.length === 0) {
+                selectElement.append('<option value="" disabled>No sections available</option>');
             }
             data.forEach(item => selectElement.append(`<option value="${item.id}">${item.name}</option>`));
             
-            // ✅ Notify Select2 that the options have changed
-            selectElement.trigger('change'); 
+            if(currentVal) selectElement.val(currentVal);
+            selectElement.trigger('change');
         });
     }
 
-    // Load Courses for the "Irregular Student" filter
     function loadCoursesForFilter() {
         $.get('enrollment_crud.php?action=courses', function (data) {
             const courseSelect = $('#courseSelect');
-            courseSelect.empty().append('<option value="">-- Search & Select Subject --</option>');
+            courseSelect.empty().append('<option value="">-- Select Subject to Filter Sections --</option>');
             data.forEach(item => courseSelect.append(`<option value="${item.id}">${item.name}</option>`));
+            courseSelect.trigger('change');
         });
     }
 
-    // Event Listener for Course Filter (Irregular Logic)
+
+    $('#addModal').on('shown.bs.modal', function () {
+        $('#addForm select[name="student_id"]').select2({ theme: 'bootstrap-5', dropdownParent: $(this), placeholder: 'Search for a student...', width: '100%'});
+        $('#courseSelect').select2({ theme: 'bootstrap-5', dropdownParent: $(this), placeholder: 'Search for a subject...', allowClear: true, width: '100%'});
+        $('#addForm select[name="section_id"]').select2({ theme: 'bootstrap-5', dropdownParent: $(this), placeholder: 'Search for a section...', width: '100%'});
+        $('#addForm select[name="status"]').select2({ theme: 'bootstrap-5', dropdownParent: $(this), width: '100%', minimumResultsForSearch: Infinity });
+        $('#enrollmentType').select2({ theme: 'bootstrap-5', dropdownParent: $(this), width: '100%', minimumResultsForSearch: Infinity });
+
+        // Load data
+        loadStudents($('#addForm select[name="student_id"]'));
+        loadCoursesForFilter();
+        loadSections($('#addForm select[name="section_id"]'), 0); // Load all sections by default
+    });
+
+    $('#addModal').on('hidden.bs.modal', function () {
+        $(this).find('form')[0].reset();
+        $(this).find('select').val(null).trigger('change');
+        $('#irregularFields').hide();
+        $('#enrollmentType').val('regular').trigger('change');
+    });
+    
+    $('#editModal').on('shown.bs.modal', function () {
+        $(this).find('select[name="status"]').select2({ theme: 'bootstrap-5', dropdownParent: $(this), width: '100%', minimumResultsForSearch: Infinity });
+    });
+
+    // --- Logic for Irregular Student ---
+    
+    $('#enrollmentType').on('change', function() {
+        const type = $(this).val();
+        if (type === 'irregular') {
+            $('#irregularFields').slideDown();
+            loadSections($('#addForm select[name="section_id"]'), 0);
+        } else {
+            $('#irregularFields').slideUp();
+            loadSections($('#addForm select[name="section_id"]'), 0);
+        }
+        $('#courseSelect').val(null).trigger('change');
+        $('#addForm select[name="section_id"]').val(null).trigger('change');
+    });
+
     $('#courseSelect').on('change', function() {
         const courseId = $(this).val();
-        const sectionSelect = $('#addForm select[name="section_id"]');
-        loadSections(sectionSelect, courseId);
+        loadSections($('#addForm select[name="section_id"]'), courseId);
     });
 
-    // Initial Loads
-    loadFormDropdowns('addForm');
-    loadCoursesForFilter();
-
-    // ✅ Initialize Select2 for ALL dropdowns when Modal Opens
-    $('#addModal').on('shown.bs.modal', function () {
-        // 1. Subject Filter
-        $('#courseSelect').select2({
-            theme: 'bootstrap-5',
-            dropdownParent: $('#addModal'),
-            placeholder: 'Search for a subject...',
-            allowClear: true,
-            width: '100%'
-        });
-
-        // 2. Student Dropdown
-        $('#addForm select[name="student_id"]').select2({
-            theme: 'bootstrap-5',
-            dropdownParent: $('#addModal'),
-            placeholder: 'Search for a student...',
-            width: '100%'
-        });
-
-        // 3. ✅ NEW: Section Dropdown
-        $('#addForm select[name="section_id"]').select2({
-            theme: 'bootstrap-5',
-            dropdownParent: $('#addModal'),
-            placeholder: 'Search for a section...',
-            width: '100%'
-        });
-    });
-
-    // Reset Select2 when modal closes
-    $('#addModal').on('hidden.bs.modal', function () {
-        $('#courseSelect').val('').trigger('change'); 
-        $('#addForm')[0].reset(); 
-        
-        // Reset Student and Section Select2 visuals
-        $('#addForm select[name="student_id"]').val('').trigger('change');
-        $('#addForm select[name="section_id"]').val('').trigger('change');
-    });
-
+    // --- DataTable Initialization ---
     const table = $('#enrollmentTable').DataTable({
         ajax: {
             url: 'enrollment_crud.php?action=read',
@@ -99,38 +97,31 @@ $(document).ready(function () {
             { 
                 data: null,
                 render: function(data) {
-                    return `<strong>${data.section_code}</strong><br><small class="text-muted">${data.course_title || ''}</small>`;
+                    return `<div class="d-flex flex-column">
+                                <span class="fw-bold">${data.section_code}</span>
+                                <small class="text-muted">${data.course_title || ''}</small>
+                            </div>`;
                 }
             },
             { data: 'status' },
             { data: 'letter_grade' },
             {
-                data: null, orderable: false,
+                data: null, orderable: false, width: '80px',
                 render: function(data) {
                     return `
-                        <button class="btn btn-sm btn-warning editBtn" 
-                            data-id="${data.enrollment_id}"
-                            data-student-id="${data.student_id}"
-                            data-section-id="${data.section_id}"
-                            data-status="${data.status}"
-                            data-grade="${data.letter_grade}">Edit</button>
-                        <button class="btn btn-sm btn-danger deleteBtn" data-id="${data.enrollment_id}">Delete</button>
+                        <button class="btn btn-sm btn-warning editBtn" data-json='${JSON.stringify(data)}' title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger deleteBtn" data-id="${data.enrollment_id}" title="Archive">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     `;
                 }
             }
         ]
     });
 
-    // Filters for Student and Section
-    $('#customFilter').html(`
-        <select id="sectionFilter" class="form-select form-select-sm" style="width:200px; display:inline-block;"><option value="">Filter by Section</option></select>
-    `);
-    $.get('enrollment_crud.php?action=sections', data => data.forEach(item => $('#sectionFilter').append(`<option value="${item.name.split(' - ')[0]}">${item.name}</option>`)));
-
-    $('#studentFilter').on('change', function() { table.column(0).search(this.value ? `^${this.value}$` : '', true, false).draw(); });
-    $('#sectionFilter').on('change', function() { table.column(1).search(this.value ? `^${this.value}` : '', true, false).draw(); });
-
-    // Add Enrollment
+    // --- Form Handlers ---
     $('#addForm').on('submit', function (e) {
         e.preventDefault();
         $.post('enrollment_crud.php?action=create', $(this).serialize(), null, 'json')
@@ -147,24 +138,30 @@ $(document).ready(function () {
             }).fail(() => Swal.fire('Error', 'A server error occurred.', 'error'));
     });
 
-    // Open Edit Modal
+    //Edit Modal Logic
     $(document).on('click', '.editBtn', function () {
+        const data = $(this).data('json');
         const modal = $('#editModal');
-        const btn = $(this);
-        modal.find('[name="enrollment_id"]').val(btn.data('id'));
-        modal.find('[name="status"]').val(btn.data('status'));
-        modal.find('[name="final_grade"]').val(btn.data('grade'));
         
-        loadFormDropdowns('editForm'); 
+        modal.find('[name="enrollment_id"]').val(data.enrollment_id);
         
-        setTimeout(() => {
-            modal.find('[name="student_id"]').val(btn.data('student-id'));
-            modal.find('[name="section_id"]').val(btn.data('section-id'));
-        }, 250);
+        modal.find('#edit_student_name').text(data.student_name);
+        modal.find('#edit_course_name').text(data.course_title);
+        modal.find('#edit_section_name').text(data.section_code);
+        modal.find('[name="status"]').val(data.status).trigger('change');
+        modal.find('[name="final_grade"]').val(data.letter_grade);
+        
+        const studentSelect = modal.find('select[name="student_id"]');
+        studentSelect.empty().append(`<option value="${data.student_id}">${data.student_name}</option>`);
+        studentSelect.val(data.student_id);
+
+        const sectionSelect = modal.find('select[name="section_id"]');
+        sectionSelect.empty().append(`<option value="${data.section_id}">${data.section_name}</option>`);
+        sectionSelect.val(data.section_id);
+        
         modal.modal('show');
     });
 
-    // Update Enrollment
     $('#editForm').on('submit', function (e) {
         e.preventDefault();
         $.post('enrollment_crud.php?action=update', $(this).serialize(), null, 'json')
@@ -179,7 +176,6 @@ $(document).ready(function () {
             }).fail(() => Swal.fire('Error', 'A server error occurred.', 'error'));
     });
 
-    // Soft Delete Enrollment
     $(document).on('click', '.deleteBtn', function () {
         const id = $(this).data('id');
         Swal.fire({

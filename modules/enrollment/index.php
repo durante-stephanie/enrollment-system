@@ -10,11 +10,8 @@ $activePage = 'enrollments';
     <title>Enrollment Maintenance</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
-    
-    <!-- ✅ NEW: Select2 CSS + Bootstrap 5 Theme -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
-
     <link rel="stylesheet" href="../../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -26,7 +23,7 @@ $activePage = 'enrollments';
     <div class="content">
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="fw-bold">📝 Enrollment Management</h2>
+            <h2 class="fw-bold">Enrollment Management</h2>
             <div>
                 <a href="export_excel.php" class="btn btn-success btn-sm">Export Excel</a>
                 <a href="export_pdf.php" class="btn btn-danger btn-sm" target="_blank">Export PDF</a>
@@ -64,19 +61,26 @@ $activePage = 'enrollments';
                         data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- ✅ Student Dropdown (Will be searchable) -->
+                    <div class="mb-3">
+                        <label class="form-label">Enrollment Type</label>
+                        <select id="enrollmentType" class="form-select">
+                            <option value="regular">Regular (By Block Section)</option>
+                            <option value="irregular">Irregular (By Subject)</option>
+                        </select>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label">Student</label>
                         <select name="student_id" class="form-select" required></select>
                     </div>
                     
-                    <!-- ✅ Subject Filter (Will be searchable) -->
-                    <div class="mb-3 p-2 bg-light border rounded">
-                        <label class="form-label fw-bold text-primary">For Irregular Students (Enroll by Subject)</label>
-                        <select id="courseSelect" class="form-select mb-2">
-                            <option value="">-- Select Subject to Filter Sections --</option>
-                        </select>
-                        <small class="text-muted">Select a subject above to see available sections below.</small>
+                    <div id="irregularFields" style="display: none;">
+                        <div class="mb-3 p-2 bg-light border rounded">
+                            <label class="form-label fw-bold text-primary">Filter by Subject</label>
+                            <select id="courseSelect" class="form-select mb-2">
+                                <option value="">-- Select Subject to Filter Sections --</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -85,18 +89,24 @@ $activePage = 'enrollments';
                             <option value="">Select Section</option>
                         </select>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
-                        <select name="status" class="form-select" required>
-                            <option value="Enrolled">Enrolled</option>
-                            <option value="Dropped">Dropped</option>
-                            <option value="Completed">Completed</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Final Grade</label>
-                        <input type="text" name="final_grade" class="form-control" placeholder="e.g., 1.75 or INC (optional)">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select name="status" class="form-select" required>
+                                    <option value="Enrolled">Enrolled</option>
+                                    <option value="Dropped">Dropped</option>
+                                    <option value="Completed">Completed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Final Grade</label>
+                                <input type="text" name="final_grade" class="form-control" placeholder="e.g., 1.75 or INC">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer"><button type="submit" class="btn btn-success">Save</button></div>
@@ -104,7 +114,6 @@ $activePage = 'enrollments';
         </div>
     </div>
 
-    <!-- Edit Modal -->
     <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <form id="editForm" class="modal-content">
@@ -114,11 +123,15 @@ $activePage = 'enrollments';
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="enrollment_id">
-                    <div class="mb-3"><label class="form-label">Student</label><select name="student_id"
-                            class="form-select" required></select></div>
                     
-                    <div class="mb-3"><label class="form-label">Section</label><select name="section_id"
-                            class="form-select" required></select></div>
+                    <div class="mb-3">
+                        <label class="form-label">Student</label>
+                        <select name="student_id" class="form-select" disabled></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Section</label>
+                        <select name="section_id" class="form-select" disabled></select>
+                    </div>
                             
                     <div class="mb-3"><label class="form-label">Status</label><select name="status" class="form-select"
                             required>
@@ -127,7 +140,7 @@ $activePage = 'enrollments';
                             <option value="Completed">Completed</option>
                         </select></div>
                     <div class="mb-3"><label class="form-label">Final Grade</label><input type="text" name="final_grade"
-                            class="form-control" placeholder="e.g., 1.75 or INC (optional)"></div>
+                            class="form-control" placeholder="e.g., 1.75 or INC"></div>
                 </div>
                 <div class="modal-footer"><button type="submit" class="btn btn-primary">Update</button></div>
             </form>
@@ -138,11 +151,8 @@ $activePage = 'enrollments';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-    
-    <!-- ✅ NEW: Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
+    
     <script src="../../js/enrollment.js"></script>
 </body>
-
 </html>

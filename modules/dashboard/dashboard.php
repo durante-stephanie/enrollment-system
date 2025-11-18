@@ -1,5 +1,4 @@
 <?php 
-// ✅ FIX: Go up two levels to find db.php
 include '../../includes/db.php'; 
 $activePage = 'dashboard'; 
 ?>
@@ -10,15 +9,12 @@ $activePage = 'dashboard';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIS Dashboard</title>
     
-    <!-- CSS Libraries -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- ✅ FIX: Go up two levels to find style.css -->
     <link rel="stylesheet" href="../../css/style.css">
     
     <style>
-        /* Dashboard Specific Styles */
         .stat-card {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             overflow: hidden;
@@ -61,10 +57,8 @@ $activePage = 'dashboard';
 </head>
 <body>
 
-    <!-- Sidebar -->
     <div class="sidebar">
         <h4>📋 SIS</h4>
-        <!-- ✅ FIX: Adjusted links to point to sibling folders using '../' -->
         <a href="dashboard.php" class="active"><i class="fas fa-th-large"></i> Dashboard</a>
         <a href="../department/index.php"><i class="fas fa-building"></i> Departments</a>
         <a href="../program/index.php"><i class="fas fa-graduation-cap"></i> Programs</a>
@@ -90,7 +84,7 @@ $activePage = 'dashboard';
             </div>
         </div>
 
-        <!-- 1. Statistics Cards Row -->
+        <!-- Statistics Cards Row -->
         <div class="row g-4 mb-4">
             <!-- Students Card -->
             <div class="col-md-6 col-lg-3">
@@ -153,9 +147,8 @@ $activePage = 'dashboard';
             </div>
         </div>
 
-        <!-- 2. Charts Row -->
+        <!-- Charts Row -->
         <div class="row g-4">
-            <!-- Program Distribution Chart -->
             <div class="col-lg-8">
                 <div class="card p-4 h-100 border-0 shadow-sm">
                     <h5 class="fw-bold mb-3">Student Distribution by Program</h5>
@@ -178,17 +171,13 @@ $activePage = 'dashboard';
 
     </div>
 
-    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Chart.js Library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- ✅ FIX: Go up two levels to find the JS folder -->
     <script src="../../js/dashboard.js"></script>
 
     <script>
-        // Simple Date Time Script
         function updateTime() {
             const now = new Date();
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };

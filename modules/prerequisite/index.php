@@ -10,9 +10,8 @@ $activePage = 'prerequisites';
     <title>Prerequisite Maintenance</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
-    <!-- Select2 CSS + Bootstrap 5 Theme -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
     <link rel="stylesheet" href="../../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -24,7 +23,7 @@ $activePage = 'prerequisites';
     <div class="content">
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="fw-bold">🔗 Prerequisite Management</h2>
+            <h2 class="fw-bold">Prerequisite Management</h2>
             <div>
                 <a href="export_excel.php" class="btn btn-success btn-sm">Export Excel</a>
                 <a href="export_pdf.php" class="btn btn-danger btn-sm" target="_blank">Export PDF</a>
@@ -43,7 +42,7 @@ $activePage = 'prerequisites';
                     <select name="prereq_course_id" class="form-select" required></select>
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Add Link</button>
+                    <button type="submit" class="btn btn-primary w-100">Add</button>
                 </div>
             </form>
         </div>
@@ -92,8 +91,7 @@ $activePage = 'prerequisites';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-    <!-- Select2 JS -->
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="../../js/prerequisite.js"></script>
 </body>
 

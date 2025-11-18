@@ -10,10 +10,9 @@ $activePage = 'courses';
     <title>Course Maintenance</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="../../css/style.css"> <!-- global styles -->
+    <link rel="stylesheet" href="../../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Select2 CSS + Bootstrap 5 Theme -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 </head>
@@ -24,7 +23,7 @@ $activePage = 'courses';
     <div class="content">
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="fw-bold">📘 Course Management</h2>
+            <h2 class="fw-bold">Course Management</h2>
             <div>
                 <a href="export_excel.php" class="btn btn-success btn-sm">Export Excel</a>
                 <a href="export_pdf.php" class="btn btn-danger btn-sm" target="_blank">Export PDF</a>
