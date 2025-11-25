@@ -23,7 +23,7 @@ $activePage = 'students';
     <div class="content">
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="fw-bold">🧑Student Management</h2>
+            <h2 class="fw-bold">Student Management</h2>
             <div>
                 <a href="export_excel.php" class="btn btn-success btn-sm">Export Excel</a>
                 <a href="export_pdf.php" class="btn btn-danger btn-sm" target="_blank">Export PDF</a>

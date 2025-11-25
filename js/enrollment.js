@@ -72,9 +72,11 @@ $(document).ready(function () {
         const type = $(this).val();
         if (type === 'irregular') {
             $('#irregularFields').slideDown();
-            loadSections($('#addForm select[name="section_id"]'), 0);
+            // In irregular, reset sections to show all, filtered by course
+            loadSections($('#addForm select[name="section_id"]'), 0); 
         } else {
             $('#irregularFields').slideUp();
+             // In regular, just show all sections
             loadSections($('#addForm select[name="section_id"]'), 0);
         }
         $('#courseSelect').val(null).trigger('change');
@@ -83,6 +85,7 @@ $(document).ready(function () {
 
     $('#courseSelect').on('change', function() {
         const courseId = $(this).val();
+        // This only fires in irregular mode, filtering sections by the selected course
         loadSections($('#addForm select[name="section_id"]'), courseId);
     });
 
@@ -124,16 +127,42 @@ $(document).ready(function () {
     // --- Form Handlers ---
     $('#addForm').on('submit', function (e) {
         e.preventDefault();
-        $.post('enrollment_crud.php?action=create', $(this).serialize(), null, 'json')
+        
+        // ✅ START: Determine action based on enrollment type
+        const enrollmentType = $('#enrollmentType').val();
+        let actionUrl = 'enrollment_crud.php?action=create'; // Default to irregular
+        
+        if (enrollmentType === 'regular') {
+            actionUrl = 'enrollment_crud.php?action=create_block';
+        }
+        // ✅ END: Determine action
+
+        $.post(actionUrl, $(this).serialize(), null, 'json')
             .done(function (res) {
                 if (res.status === 'duplicate') {
-                    Swal.fire('Duplicate', 'This student is already enrolled in this section.', 'error');
+                    Swal.fire('Duplicate', 'This student is already enrolled in this specific section.', 'error');
+                } else if (res.status === 'prereq_failed') {
+                    const missingCourses = (res.missing || []).join(', ');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Prerequisite(s) Not Met',
+                        // ✅ Updated message
+                        text: `Student has not completed prerequisites for one or more courses: ${missingCourses}`
+                    });
+                
+                // ✅ START: Handle new block success
+                } else if (res.status === 'success_block') {
+                    $('#addModal').modal('hide');
+                    table.ajax.reload(null, false);
+                    Swal.fire('Success', `Enrolled student in ${res.enrolled_count} sections successfully!`, 'success');
+                // ✅ END: Handle new block success
+
                 } else if (res.status === 'success') {
                     $('#addModal').modal('hide');
                     table.ajax.reload(null, false);
                     Swal.fire('Success', 'Enrollment added successfully!', 'success');
                 } else {
-                    Swal.fire('Error', 'Failed to add enrollment.', 'error');
+                    Swal.fire('Error', 'Failed to add enrollment. ' + (res.message || ''), 'error');
                 }
             }).fail(() => Swal.fire('Error', 'A server error occurred.', 'error'));
     });
@@ -145,9 +174,6 @@ $(document).ready(function () {
         
         modal.find('[name="enrollment_id"]').val(data.enrollment_id);
         
-        modal.find('#edit_student_name').text(data.student_name);
-        modal.find('#edit_course_name').text(data.course_title);
-        modal.find('#edit_section_name').text(data.section_code);
         modal.find('[name="status"]').val(data.status).trigger('change');
         modal.find('[name="final_grade"]').val(data.letter_grade);
         
