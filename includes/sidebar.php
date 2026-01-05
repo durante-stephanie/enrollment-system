@@ -39,4 +39,5 @@
     <a href="../backup/index.php" class="<?= ($activePage == 'backup') ? 'active' : '' ?>">
         <i class="fas fa-database"></i> Backup & Restore
     </a>
+    <a href="../../logout.php" class="mt-auto text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
 </div>

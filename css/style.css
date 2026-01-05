@@ -93,7 +93,6 @@ body {
 }
 
 h2.fw-bold {
-    color: var(--navy);
     font-weight: 800 !important;
     letter-spacing: -0.5px;
 }

@@ -70,6 +70,8 @@ $activePage = 'dashboard';
         <a href="../prerequisite/index.php"><i class="fas fa-link"></i> Prerequisites</a>
         <a href="../section/index.php"><i class="fas fa-book-open"></i> Sections</a>
         <a href="../enrollment/index.php"><i class="fas fa-clipboard-list"></i> Enrollments</a>
+        <a href="../backup/index.php"><i class="fas fa-database"></i> Backup & Restore </a>
+        <a href="../../logout.php" class="mt-auto text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
 
     <div class="content">
