@@ -10,22 +10,32 @@ $(document).ready(function () {
         });
     }
 
-    function loadSections(selectElement, courseId = 0) {
-        let url = 'enrollment_crud.php?action=sections';
-        // Only filter if courseId is provided (for Irregular)
-        if (courseId > 0) {
-            url += `&course_id=${courseId}`;
+    // ✅ UPDATED: Function to load Sections or Blocks based on type
+    function loadSections(selectElement, type = 'regular', courseId = 0) {
+        let url = '';
+        
+        if (type === 'regular') {
+            // Fetch Distinct Blocks (Grouped)
+            url = 'enrollment_crud.php?action=blocks';
+        } else {
+            // Fetch Individual Sections (Filtered by Course if provided)
+            url = 'enrollment_crud.php?action=sections';
+            if (courseId > 0) {
+                url += `&course_id=${courseId}`;
+            }
         }
 
         $.get(url, function (data) {
             const currentVal = selectElement.val();
             selectElement.empty().append('<option value="">Select Section</option>');
-            if (data.length === 0 && courseId > 0) {
-                selectElement.append('<option value="" disabled>No sections found for this subject</option>');
-            } else if (data.length === 0) {
+            
+            if (data.length === 0) {
                 selectElement.append('<option value="" disabled>No sections available</option>');
             }
-            data.forEach(item => selectElement.append(`<option value="${item.id}">${item.name}</option>`));
+
+            data.forEach(item => {
+                selectElement.append(`<option value="${item.id}">${item.name}</option>`);
+            });
             
             if(currentVal) selectElement.val(currentVal);
             selectElement.trigger('change');
@@ -52,7 +62,9 @@ $(document).ready(function () {
         // Load data
         loadStudents($('#addForm select[name="student_id"]'));
         loadCoursesForFilter();
-        loadSections($('#addForm select[name="section_id"]'), 0); // Load all sections by default
+
+        // ✅ Default to Regular (Block) view on open
+        $('#enrollmentType').val('regular').trigger('change');
     });
 
     $('#addModal').on('hidden.bs.modal', function () {
@@ -66,27 +78,37 @@ $(document).ready(function () {
         $(this).find('select[name="status"]').select2({ theme: 'bootstrap-5', dropdownParent: $(this), width: '100%', minimumResultsForSearch: Infinity });
     });
 
-    // --- Logic for Irregular Student ---
+    // --- Logic for Regular vs Irregular Student ---
     
+    // ✅ UPDATED: Handle Enrollment Type Change
     $('#enrollmentType').on('change', function() {
         const type = $(this).val();
+        const sectionSelect = $('#addForm select[name="section_id"]');
+        
         if (type === 'irregular') {
             $('#irregularFields').slideDown();
-            // In irregular, reset sections to show all, filtered by course
-            loadSections($('#addForm select[name="section_id"]'), 0); 
+            // Load ALL sections initially for irregular, or wait for course selection
+            loadSections(sectionSelect, 'irregular', 0); 
         } else {
             $('#irregularFields').slideUp();
-             // In regular, just show all sections
-            loadSections($('#addForm select[name="section_id"]'), 0);
+            // Load DISTINCT BLOCKS for regular
+            loadSections(sectionSelect, 'regular');
         }
+        
+        // Reset dependent fields
         $('#courseSelect').val(null).trigger('change');
-        $('#addForm select[name="section_id"]').val(null).trigger('change');
+        sectionSelect.val(null).trigger('change');
     });
 
+    // ✅ UPDATED: Handle Course Selection (Irregular Only)
     $('#courseSelect').on('change', function() {
         const courseId = $(this).val();
-        // This only fires in irregular mode, filtering sections by the selected course
-        loadSections($('#addForm select[name="section_id"]'), courseId);
+        const type = $('#enrollmentType').val();
+        
+        // Only reload sections if we are in Irregular mode
+        if (type === 'irregular') {
+            loadSections($('#addForm select[name="section_id"]'), 'irregular', courseId);
+        }
     });
 
     // --- DataTable Initialization ---
@@ -128,14 +150,13 @@ $(document).ready(function () {
     $('#addForm').on('submit', function (e) {
         e.preventDefault();
         
-        // ✅ START: Determine action based on enrollment type
+        // Determine action based on enrollment type
         const enrollmentType = $('#enrollmentType').val();
         let actionUrl = 'enrollment_crud.php?action=create'; // Default to irregular
         
         if (enrollmentType === 'regular') {
             actionUrl = 'enrollment_crud.php?action=create_block';
         }
-        // ✅ END: Determine action
 
         $.post(actionUrl, $(this).serialize(), null, 'json')
             .done(function (res) {
@@ -146,16 +167,13 @@ $(document).ready(function () {
                     Swal.fire({
                         icon: 'error',
                         title: 'Prerequisite(s) Not Met',
-                        // ✅ Updated message
                         text: `Student has not completed prerequisites for one or more courses: ${missingCourses}`
                     });
                 
-                // ✅ START: Handle new block success
                 } else if (res.status === 'success_block') {
                     $('#addModal').modal('hide');
                     table.ajax.reload(null, false);
                     Swal.fire('Success', `Enrolled student in ${res.enrolled_count} sections successfully!`, 'success');
-                // ✅ END: Handle new block success
 
                 } else if (res.status === 'success') {
                     $('#addModal').modal('hide');

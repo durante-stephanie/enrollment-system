@@ -4,17 +4,9 @@ ini_set('display_errors', 1);
 header('Content-Type: application/json');
 include '../../includes/db.php';
 
-// --- ✅ START: Reusable Prerequisite Check Function ---
-/**
- * Checks if a student has met the prerequisites for a given course.
- *
- * @param mysqli $conn The database connection
- * @param int $student_id The student's ID
- * @param int $course_id The course ID to check against
- * @return array ['status' => 'success'] or ['status' => 'prereq_failed', 'missing' => ['CODE1', 'CODE2']]
- */
+// --- Helper Function: Check Prerequisites (Logic is here but will be bypassed below) ---
 function checkPrerequisites($conn, $student_id, $course_id) {
-    // 1. Find all required prerequisite course IDs for this course
+    // 1. Find all required prerequisite course IDs
     $prereq_stmt = $conn->prepare("
         SELECT prereq_course_id 
         FROM tblcourse_prerequisite 
@@ -29,12 +21,11 @@ function checkPrerequisites($conn, $student_id, $course_id) {
     }
     $prereq_stmt->close();
 
-    // 2. If no prerequisites, student is clear
     if (empty($required_prereqs)) {
         return ['status' => 'success'];
     }
 
-    // 3. Get all course_ids the student has 'Completed'
+    // 2. Get all course_ids the student has 'Completed'
     $completed_stmt = $conn->prepare("
         SELECT DISTINCT sec.course_id
         FROM tblenrollment e
@@ -52,7 +43,7 @@ function checkPrerequisites($conn, $student_id, $course_id) {
     }
     $completed_stmt->close();
 
-    // 4. Find which prerequisites are missing
+    // 3. Find missing
     $missing_prereqs = [];
     foreach ($required_prereqs as $req_id) {
         if (!in_array($req_id, $completed_courses)) {
@@ -60,11 +51,10 @@ function checkPrerequisites($conn, $student_id, $course_id) {
         }
     }
 
-    // 5. If any are missing, block and report them
     if (!empty($missing_prereqs)) {
+        // Fetch codes for error message
         $codes_to_fetch = implode(',', array_fill(0, count($missing_prereqs), '?'));
         $types = str_repeat('i', count($missing_prereqs));
-        
         $codes_stmt = $conn->prepare("SELECT course_code FROM tblcourse WHERE course_id IN ($codes_to_fetch) AND is_deleted = 0");
         $codes_stmt->bind_param($types, ...$missing_prereqs);
         $codes_stmt->execute();
@@ -81,10 +71,8 @@ function checkPrerequisites($conn, $student_id, $course_id) {
         ];
     }
 
-    // 6. All prerequisites are met
     return ['status' => 'success'];
 }
-// --- ✅ END: Reusable Prerequisite Check Function ---
 
 $action = $_GET['action'] ?? '';
 
@@ -113,33 +101,29 @@ switch ($action) {
         echo json_encode($data);
         break;
 
-    case 'create': // This is now for IRREGULAR (single subject)
+    case 'create': // IRREGULAR (Single Subject Enrollment)
         $student_id = $_POST['student_id'] ?? 0;
         $section_id = $_POST['section_id'] ?? 0;
 
-        // --- ✅ START: PREREQUISITE VALIDATION ---
+        // 1. Validate Prerequisite (DISABLED)
+        // We comment this out to allow enrollment regardless of prereq status
+        /*
         $course_stmt = $conn->prepare("SELECT course_id FROM tblsection WHERE section_id = ? AND is_deleted = 0");
         $course_stmt->bind_param("i", $section_id);
         $course_stmt->execute();
-        $course_result = $course_stmt->get_result();
-        $course_row = $course_result->fetch_assoc();
-        $course_id = $course_row['course_id'] ?? 0;
+        $c_res = $course_stmt->get_result()->fetch_assoc();
+        $course_id = $c_res['course_id'] ?? 0;
         $course_stmt->close();
 
-        if ($course_id === 0) {
-            echo json_encode(['status' => 'error', 'message' => 'Selected section is invalid.']);
-            exit;
-        }
-
-        // Use the reusable function
         $prereq_check = checkPrerequisites($conn, $student_id, $course_id);
         if ($prereq_check['status'] === 'prereq_failed') {
             echo json_encode($prereq_check);
             exit;
         }
-        // --- ✅ END: PREREQUISITE VALIDATION ---
+        */
+        // --- End Prerequisite Check ---
 
-        // Original Duplicate Check
+        // 2. Duplicate Check
         $check = $conn->prepare("SELECT COUNT(*) FROM tblenrollment WHERE student_id=? AND section_id=? AND is_deleted=0");
         $check->bind_param("ii", $student_id, $section_id);
         $check->execute();
@@ -152,7 +136,7 @@ switch ($action) {
             exit;
         }
 
-        // Original Insert Statement
+        // 3. Insert Enrollment
         $stmt = $conn->prepare("INSERT INTO tblenrollment (student_id, section_id, status, letter_grade, date_enrolled, is_deleted)
                                 VALUES (?, ?, ?, ?, CURDATE(), 0)");
         $stmt->bind_param("iiss", $student_id, $section_id, $_POST['status'], $_POST['final_grade']);
@@ -163,30 +147,27 @@ switch ($action) {
         }
         break;
 
-    // --- ✅ START: NEW BLOCK ENROLLMENT CASE ---
-    case 'create_block':
+    case 'create_block': // REGULAR (Block Section Enrollment)
         $student_id = $_POST['student_id'] ?? 0;
-        $selected_section_id = $_POST['section_id'] ?? 0; // The one section user picked
+        $selected_section_id = $_POST['section_id'] ?? 0; 
         $status = $_POST['status'] ?? 'Enrolled';
-        // Grade is null on block enroll, use empty string for bind_param
         $final_grade = $_POST['final_grade'] ?? ''; 
 
-        // 1. Get the block code (section_code) and term_id from the selected section
+        // 1. Get block info (section_code & term)
         $block_stmt = $conn->prepare("SELECT section_code, term_id FROM tblsection WHERE section_id = ? AND is_deleted = 0");
         $block_stmt->bind_param("i", $selected_section_id);
         $block_stmt->execute();
-        $block_result = $block_stmt->get_result();
-        $block_row = $block_result->fetch_assoc();
+        $block_res = $block_stmt->get_result()->fetch_assoc();
         
-        if (!$block_row) {
+        if (!$block_res) {
             echo json_encode(['status' => 'error', 'message' => 'Invalid block section selected.']);
             exit;
         }
-        $section_code = $block_row['section_code'];
-        $term_id = $block_row['term_id'];
+        $section_code = $block_res['section_code'];
+        $term_id = $block_res['term_id'];
         $block_stmt->close();
 
-        // 2. Find all sections in this block (same code, same term)
+        // 2. Find all sections (subjects) in this block
         $all_sections_stmt = $conn->prepare("
             SELECT section_id, course_id 
             FROM tblsection 
@@ -197,7 +178,7 @@ switch ($action) {
         $all_sections_result = $all_sections_stmt->get_result();
         $sections_to_enroll = [];
         while ($row = $all_sections_result->fetch_assoc()) {
-            $sections_to_enroll[] = $row; // Store both section_id and course_id
+            $sections_to_enroll[] = $row;
         }
         $all_sections_stmt->close();
 
@@ -206,7 +187,7 @@ switch ($action) {
             exit;
         }
 
-        // 3. Find sections student is ALREADY enrolled in
+        // 3. Check existing enrollments to avoid duplicates
         $section_ids = array_column($sections_to_enroll, 'section_id');
         $placeholders = implode(',', array_fill(0, count($section_ids), '?'));
         $types = str_repeat('i', count($section_ids));
@@ -225,11 +206,10 @@ switch ($action) {
         }
         $existing_stmt->close();
 
-        // 4. Start transaction
+        // 4. Enroll Loop
         $conn->begin_transaction();
         $enrolled_count = 0;
-        $failed_prereqs = [];
-
+        
         try {
             $insert_stmt = $conn->prepare("
                 INSERT INTO tblenrollment (student_id, section_id, status, letter_grade, date_enrolled, is_deleted)
@@ -240,36 +220,26 @@ switch ($action) {
                 $s_id = $section['section_id'];
                 $c_id = $section['course_id'];
 
-                // 5. Skip if already enrolled
+                // Skip if already enrolled
                 if (in_array($s_id, $existing_enrollments)) {
                     continue;
                 }
 
-                // 6. Check prerequisites
+                // --- PREREQUISITE CHECK DISABLED ---
+                /*
                 $prereq_check = checkPrerequisites($conn, $student_id, $c_id);
                 if ($prereq_check['status'] === 'prereq_failed') {
-                    // Don't exit immediately, collect all failures
-                    $failed_prereqs = array_merge($failed_prereqs, $prereq_check['missing']);
-                    continue; // Skip this course
+                    // Logic to skip or stop would go here. 
+                    // We disabled it so it proceeds to enroll.
                 }
+                */
+                // -----------------------------------
 
-                // 7. Insert new enrollment
                 $insert_stmt->bind_param("iiss", $student_id, $s_id, $status, $final_grade);
                 $insert_stmt->execute();
                 $enrolled_count++;
             }
 
-            if (!empty($failed_prereqs)) {
-                // If some courses failed prereqs, roll back the ones that succeeded
-                $conn->rollback();
-                echo json_encode([
-                    'status' => 'prereq_failed',
-                    'missing' => array_unique($failed_prereqs)
-                ]);
-                exit;
-            }
-
-            // 8. If all good, commit
             $conn->commit();
             echo json_encode(['status' => 'success_block', 'enrolled_count' => $enrolled_count]);
 
@@ -278,16 +248,10 @@ switch ($action) {
             echo json_encode(['status' => 'error', 'message' => $exception->getMessage()]);
         }
         break;
-    // --- ✅ END: NEW BLOCK ENROLLMENT CASE ---
 
     case 'update':
-        // Only updates status and grade, not student/section
         $stmt = $conn->prepare("UPDATE tblenrollment SET status=?, letter_grade=? WHERE enrollment_id=? AND is_deleted=0");
-        $stmt->bind_param("ssi",
-            $_POST['status'],
-            $_POST['final_grade'],
-            $_POST['enrollment_id']
-        );
+        $stmt->bind_param("ssi", $_POST['status'], $_POST['final_grade'], $_POST['enrollment_id']);
         if ($stmt->execute()) {
             echo json_encode(['status' => 'updated']);
         } else {
@@ -317,11 +281,30 @@ switch ($action) {
         echo json_encode($result->fetch_all(MYSQLI_ASSOC));
         break;
 
+    case 'blocks':
+        // Returns distinct block names for "Regular" dropdown
+        $sql = "SELECT MIN(s.section_id) as id, 
+                       s.section_code, 
+                       t.term_code 
+                FROM tblsection s
+                JOIN tblterm t ON s.term_id = t.term_id
+                WHERE s.is_deleted = 0
+                GROUP BY s.section_code, s.term_id
+                ORDER BY s.section_code ASC";
+        $result = $conn->query($sql);
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = [
+                'id' => $row['id'],
+                'name' => $row['section_code'] . ' (' . $row['term_code'] . ')'
+            ];
+        }
+        echo json_encode($data);
+        break;
+
     case 'sections':
         $course_id = isset($_GET['course_id']) ? (int)$_GET['course_id'] : 0;
-        
         if ($course_id > 0) {
-            // Irregular: Filter by specific course
             $stmt = $conn->prepare("SELECT s.section_id AS id, 
                                            CONCAT(s.section_code, ' (', s.day_pattern, ' ', TIME_FORMAT(s.start_time, '%H:%i'), '-', TIME_FORMAT(s.end_time, '%H:%i'), ')') AS name 
                                     FROM tblsection s
@@ -329,14 +312,12 @@ switch ($action) {
                                     ORDER BY s.section_code ASC");
             $stmt->bind_param("i", $course_id);
         } else {
-            // Regular: Show all sections
             $stmt = $conn->prepare("SELECT s.section_id AS id, CONCAT(s.section_code, ' - ', c.course_title) AS name 
                                     FROM tblsection s
                                     JOIN tblcourse c ON s.course_id = c.course_id
                                     WHERE s.is_deleted = 0
                                     ORDER BY s.section_code ASC");
         }
-        
         $stmt->execute();
         $result = $stmt->get_result();
         echo json_encode($result->fetch_all(MYSQLI_ASSOC));
