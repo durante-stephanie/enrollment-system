@@ -36,4 +36,7 @@
     <a href="../enrollment/index.php" class="<?= ($activePage == 'enrollments') ? 'active' : '' ?>">
         <i class="fas fa-clipboard-list"></i> Enrollments
     </a>
+    <a href="../backup/index.php" class="<?= ($activePage == 'backup') ? 'active' : '' ?>">
+        <i class="fas fa-database"></i> Backup & Restore
+    </a>
 </div>
