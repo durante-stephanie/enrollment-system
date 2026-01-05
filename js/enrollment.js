@@ -162,18 +162,34 @@ $(document).ready(function () {
             .done(function (res) {
                 if (res.status === 'duplicate') {
                     Swal.fire('Duplicate', 'This student is already enrolled in this specific section.', 'error');
+                
                 } else if (res.status === 'prereq_failed') {
+                    // For Irregular Student (Single Subject) - Stop enrollment completely
                     const missingCourses = (res.missing || []).join(', ');
                     Swal.fire({
                         icon: 'error',
                         title: 'Prerequisite(s) Not Met',
-                        text: `Student has not completed prerequisites for one or more courses: ${missingCourses}`
+                        text: `Cannot enroll. Student has not completed: ${missingCourses}`
                     });
                 
                 } else if (res.status === 'success_block') {
+                    // For Regular Student (Block)
                     $('#addModal').modal('hide');
                     table.ajax.reload(null, false);
-                    Swal.fire('Success', `Enrolled student in ${res.enrolled_count} sections successfully!`, 'success');
+                    
+                    if (res.skipped_count > 0) {
+                        // Show warning if some subjects were skipped in the block
+                        let skippedList = res.skipped_details.join('<br>');
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Partial Enrollment Success',
+                            html: `Enrolled in <b>${res.enrolled_count}</b> sections.<br><br>
+                                   <span class="text-danger">Skipped <b>${res.skipped_count}</b> subjects due to missing prerequisites:</span><br>
+                                   <div class="text-start small mt-2 bg-light p-2 rounded">${skippedList}</div>`
+                        });
+                    } else {
+                        Swal.fire('Success', `Enrolled student in ${res.enrolled_count} sections successfully!`, 'success');
+                    }
 
                 } else if (res.status === 'success') {
                     $('#addModal').modal('hide');
